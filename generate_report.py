@@ -226,13 +226,6 @@ def build_weekly_wide(data: pd.DataFrame) -> tuple:
         .sum()
         .reset_index()
     )
-    day_counts = (
-        df.groupby(["court_id", "week_start"])["date"]
-        .nunique()
-        .reset_index()
-        .rename(columns={"date": "n_days"})
-    )
-    weekly = weekly.merge(day_counts, on=["court_id", "week_start"])
 
     days_per_week = df.groupby("week_start")["date"].nunique()
     full_week_starts = set(days_per_week[days_per_week >= 7].index)
@@ -249,12 +242,6 @@ def build_weekly_wide(data: pd.DataFrame) -> tuple:
 
     for court in TARGET_COURTS:
         c = weekly[weekly["court_id"] == court].set_index("week_start")
-
-        # Days-with-data row
-        days_row = {"court_id": court, "metric": "days_in_week"}
-        for ws in all_weeks:
-            days_row[str(ws)] = int(c.at[ws, "n_days"]) if ws in c.index else ""
-        rows.append(days_row)
 
         for metric in available:
             is_dollar = "dollars" in metric
@@ -306,17 +293,9 @@ def print_weekly_series(wide: pd.DataFrame, all_weeks: list):
         )
         print(f"  {'Sat':14}{sat_hdr}")
 
-        # Row 3: days with data
-        days_row = court_rows[court_rows["metric"] == "days_in_week"].iloc[0]
-        days_str = "".join(
-            f" {str(days_row[str(ws)]) if days_row[str(ws)] != '' else 'N/A':>{cell_w}}"
-            for ws in all_weeks
-        )
-        print(f"  {'Days':14}{days_str}")
-
         print(f"  {'-'*14}" + f" {'-'*cell_w}" * len(all_weeks))
 
-        for _, mrow in court_rows[court_rows["metric"] != "days_in_week"].iterrows():
+        for _, mrow in court_rows.iterrows():
             label = mrow["metric"]
             is_dollar = label in ("Err $", "Succ $")
             row_str = f"  {label:<14}"
