@@ -234,7 +234,9 @@ def build_weekly_wide(data: pd.DataFrame) -> tuple:
     )
     weekly = weekly.merge(day_counts, on=["court_id", "week_start"])
 
-    all_weeks = sorted(weekly["week_start"].unique())
+    days_per_week = df.groupby("week_start")["date"].nunique()
+    full_week_starts = set(days_per_week[days_per_week >= 7].index)
+    all_weeks = sorted(ws for ws in weekly["week_start"].unique() if ws in full_week_starts)
     week_cols  = [str(ws) for ws in all_weeks]
 
     rows = []
